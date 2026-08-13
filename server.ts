@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -78,10 +79,54 @@ async function startServer() {
 
       await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
       
+      let emailSent = false;
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS,
+            },
+          });
+          await transporter.sendMail({
+            from: `"Sky Light PRO" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Sua Senha Provisória - Sky Light PRO",
+            text: `Olá,\n\nUma solicitação de redefinição de senha foi feita para o seu usuário.\n\nSua senha provisória é: ${tempPassword}\n\nAo fazer login, você será obrigado a alterar esta senha.\n\nSe você não solicitou isso, por favor entre em contato com o administrador.\n\nEquipe Sky Light PRO.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <div style="background-color: #2563eb; padding: 20px; text-align: center;">
+                  <h1 style="color: white; margin: 0; font-size: 24px;">Sky Light PRO</h1>
+                </div>
+                <div style="padding: 30px;">
+                  <h2 style="color: #1e293b; margin-top: 0;">Recuperação de Acesso</h2>
+                  <p style="color: #475569; line-height: 1.6;">Olá,</p>
+                  <p style="color: #475569; line-height: 1.6;">Recebemos uma solicitação de redefinição de senha para sua conta.</p>
+                  <div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; text-align: center; margin: 25px 0;">
+                    <p style="color: #64748b; font-size: 14px; margin: 0 0 5px 0;">Sua senha provisória é:</p>
+                    <p style="color: #0f172a; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 2px;">${tempPassword}</p>
+                  </div>
+                  <p style="color: #475569; line-height: 1.6; font-size: 14px;"><strong>Importante:</strong> Ao fazer o login com essa senha, o sistema exigirá que você cadastre uma nova senha imediatamente por motivos de segurança.</p>
+                  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+                  <p style="color: #94a3b8; font-size: 12px; margin: 0;">Se você não solicitou a redefinição, por favor desconsidere este e-mail ou entre em contato com o suporte técnico.</p>
+                </div>
+              </div>
+            `,
+          });
+          emailSent = true;
+          console.log(`Email enviado para ${email} com sucesso!`);
+        } catch (mailError) {
+          console.error("Erro ao enviar e-mail:", mailError);
+        }
+      }
+
       res.json({ 
         success: true, 
-        message: "Senha provisória gerada com sucesso e enviada ao e-mail.",
-        tempPassword // We return it so the frontend can show it in a fake alert for demonstration
+        message: emailSent 
+          ? "Senha provisória gerada e enviada para o seu e-mail!" 
+          : "Senha provisória gerada com sucesso! (Configure as credenciais SMTP no .env para receber por e-mail real).",
+        tempPassword // We still return it so the frontend fake UI works if SMTP is not configured
       });
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });

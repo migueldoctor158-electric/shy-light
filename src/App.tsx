@@ -82,10 +82,15 @@ export default function App() {
   const [alerts, setAlerts] = useState<SystemAlert[]>(INITIAL_ALERTS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
 
+  const [dataLoadError, setDataLoadError] = useState<boolean>(false);
+
   // Load from DB on mount
   useEffect(() => {
     fetch('/api/db')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("Falha ao ler o banco de dados");
+        return r.json();
+      })
       .then(data => {
         if (data) {
           setUsers(data.users || INITIAL_USERS);
@@ -102,7 +107,8 @@ export default function App() {
       })
       .catch(e => {
         console.error("Failed to load DB", e);
-        setDataLoaded(true);
+        // Do NOT set dataLoaded to true, so we don't accidentally save mock data on top of DB!
+        setDataLoadError(true);
       });
   }, []);
 
@@ -484,6 +490,37 @@ export default function App() {
   };
 
   const unreadAlertsCount = (alerts || []).filter((a) => !a.read).length;
+
+  if (dataLoadError) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-slate-50 text-slate-800 p-6 text-center">
+        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold mb-2">Erro ao conectar com o Servidor</h2>
+        <p className="text-slate-600 mb-6 max-w-md">
+          Não foi possível carregar os dados do sistema. Certifique-se de que o servidor está rodando. Por segurança, o sistema foi bloqueado para evitar perda de dados.
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          Tentar Novamente
+        </button>
+      </div>
+    );
+  }
+
+  if (!dataLoaded) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-slate-50 text-slate-800">
+        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <p className="font-medium text-slate-600 animate-pulse">Sincronizando com o servidor...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginScreen onLogin={handleLogin} mockUsers={users} />;
