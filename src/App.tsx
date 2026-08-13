@@ -112,9 +112,15 @@ export default function App() {
       });
   }, []);
 
+  const initialRender = React.useRef(true);
+
   // Save to DB on state change
   useEffect(() => {
     if (!dataLoaded) return;
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
     const saveState = async () => {
       try {
         await fetch('/api/db', {
