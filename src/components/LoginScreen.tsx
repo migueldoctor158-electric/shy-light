@@ -17,22 +17,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
   const [isForgotPasswordView, setIsForgotPasswordView] = useState(false);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
 
-  const handleManualLogin = (e: React.FormEvent) => {
+  const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Tenta encontrar um usuário que corresponda ao e-mail ou matrícula (registrationCode)
-    const foundUser = mockUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() || u.registrationCode.toLowerCase() === email.toLowerCase()
-    );
-
-    if (foundUser) {
-      // Verifica a senha
-      if (foundUser.password === password) {
-        onLogin(foundUser, rememberMe);
-      } else {
-        setError('Credenciais inválidas. Senha incorreta.');
+    try {
+      let currentUsers = mockUsers;
+      try {
+        const res = await fetch('/api/db');
+        const data = await res.json();
+        if (data && data.users) {
+          currentUsers = data.users;
+        }
+      } catch (e) {
+        console.warn("Failed to fetch fresh DB, using props");
       }
-    } else {
-      setError('Credenciais inválidas. Verifique seu e-mail ou matrícula.');
+
+      const foundUser = currentUsers.find(
+        (u: any) => u.email.toLowerCase() === email.toLowerCase() || u.registrationCode.toLowerCase() === email.toLowerCase()
+      );
+
+      if (foundUser) {
+        if (foundUser.password === password) {
+          onLogin(foundUser, rememberMe);
+        } else {
+          setError('Credenciais inválidas. Senha incorreta.');
+        }
+      } else {
+        setError('Credenciais inválidas. Verifique seu e-mail ou matrícula.');
+      }
+    } catch (err) {
+      setError('Erro durante o login.');
     }
   };
 

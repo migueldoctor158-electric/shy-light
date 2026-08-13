@@ -168,7 +168,9 @@ export const SecurityAudit: React.FC<SecurityAuditProps> = ({
         phone: formData.phone || '',
         region: formData.region || 'Todas',
         createdAt: new Date().toISOString().split('T')[0],
-        lastAccess: 'Novo Cadastro'
+        lastAccess: 'Novo Cadastro',
+        password: 'senha',
+        requiresPasswordChange: true
       };
       onAddUser?.(newUser);
       showToast(`Novo usuário "${newUser.name}" cadastrado como ${newUser.role}!`);
