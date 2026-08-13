@@ -14,7 +14,8 @@ import {
   X,
   HardHat,
   Shield,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 import { Role, EmergencyState, SystemAlert, UserAccount } from '../types';
 
@@ -25,6 +26,7 @@ interface HeaderBarProps {
   users?: UserAccount[];
   onSelectUser?: (user: UserAccount) => void;
   onOpenUserRegistration?: () => void;
+  onLogout?: () => void;
   emergencyState?: EmergencyState;
   onOpenEmergencyModal?: () => void;
   alerts?: SystemAlert[];
@@ -44,6 +46,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   users = [],
   onSelectUser,
   onOpenUserRegistration,
+  onLogout,
   emergencyState = { active: false } as EmergencyState,
   onOpenEmergencyModal,
   alerts = [],
@@ -287,6 +290,21 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                       >
                         <UserCheck className="w-3.5 h-3.5" />
                         <span>+ Cadastrar Novo Usuário</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {onLogout && (
+                    <div className="border-t border-slate-100 pt-2 mt-2 px-2 pb-1">
+                      <button
+                        onClick={() => {
+                          onLogout();
+                          setRoleDropdownOpen(false);
+                        }}
+                        className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 font-bold py-2 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sair do Sistema</span>
                       </button>
                     </div>
                   )}

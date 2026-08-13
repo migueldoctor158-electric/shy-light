@@ -1,8 +1,1 @@
-{
-  "name": "Remix Sky Light - Plataforma Inteligente de Telegestão e Automação de Iluminação Pública",
-  "description": "Sistema completo para controle centralizado, automação em massa, monitoramento em tempo real, gestão de manutenção, emergências e eficiência energética da rede de iluminação pública.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
+{"name":"Remix Sky Light - Plataforma Inteligente de Telegestão e Automação de Iluminação Pública","description":"Sistema completo para controle centralizado, automação em massa, monitoramento em tempo real, gestão de manutenção, emergências e eficiência energética da rede de iluminação pública.","requestFramePermissions":[],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}

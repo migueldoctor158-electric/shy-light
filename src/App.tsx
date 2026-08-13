@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeaderBar } from './components/HeaderBar';
+import { LoginScreen } from './components/LoginScreen';
 import { NavigationTabs } from './components/NavigationTabs';
 import { DashboardOverview } from './components/DashboardOverview';
 import { SmartMap } from './components/SmartMap';
@@ -44,6 +45,24 @@ import {
 } from './types';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
+  // Load session from localStorage on mount
+  useEffect(() => {
+    const sessionUser = localStorage.getItem('skylight_session');
+    if (sessionUser) {
+      try {
+        const user = JSON.parse(sessionUser);
+        setCurrentUser(user);
+        setCurrentRole(user.role);
+        setIsAuthenticated(true);
+      } catch (e) {
+        // Invalid session data
+        localStorage.removeItem('skylight_session');
+      }
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [currentRole, setCurrentRole] = useState<Role>('Administrador');
 
@@ -91,6 +110,35 @@ export default function App() {
         setActiveTab('map');
       }
     }
+  };
+
+  const handleLogin = (user: UserAccount, rememberMe: boolean) => {
+    setCurrentUser(user);
+    handleRoleChange(user.role);
+    setIsAuthenticated(true);
+
+    if (rememberMe) {
+      localStorage.setItem('skylight_session', JSON.stringify(user));
+    }
+
+    // Add Audit Log
+    const newLog: AuditLog = {
+      id: `LOG-${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      userName: user.name,
+      userRole: user.role,
+      action: 'LOGIN_USUARIO_SUCESSO',
+      details: `Login realizado via tela de autenticação. Sessão iniciada.`,
+      ipAddress: '189.40.12.11'
+    };
+    setAuditLogs((prev) => [newLog, ...prev]);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('skylight_session');
+    // Optionally reset active tab or just leave it
+    setActiveTab('dashboard');
   };
 
   // Focus pole on map
@@ -360,6 +408,10 @@ export default function App() {
 
   const unreadAlertsCount = (alerts || []).filter((a) => !a.read).length;
 
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={handleLogin} mockUsers={users} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
       {/* Top Header Bar */}
@@ -373,6 +425,7 @@ export default function App() {
           setActiveTab('security');
           setInitialOpenAddUserModal(true);
         }}
+        onLogout={handleLogout}
         emergencyState={emergencyState}
         onOpenEmergencyModal={() => setIsEmergencyModalOpen(true)}
         alerts={alerts}
