@@ -14,6 +14,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
+  const [isForgotPasswordView, setIsForgotPasswordView] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+
   const handleManualLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Tenta encontrar um usuário que corresponda ao e-mail ou matrícula (registrationCode)
@@ -22,10 +25,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
     );
 
     if (foundUser) {
-      // Para demonstração, ignoramos a senha e aceitamos qualquer coisa se o usuário existir
-      onLogin(foundUser, rememberMe);
+      // Verifica a senha
+      if (foundUser.password === password) {
+        onLogin(foundUser, rememberMe);
+      } else {
+        setError('Credenciais inválidas. Senha incorreta.');
+      }
     } else {
       setError('Credenciais inválidas. Verifique seu e-mail ou matrícula.');
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setForgotPasswordMessage('');
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setForgotPasswordMessage(`Senha provisória enviada! Para fins de teste (simulação de e-mail), sua senha é: ${data.tempPassword}`);
+      } else {
+        setError(data.error || 'Erro ao processar solicitação.');
+      }
+    } catch (err) {
+      setError('Erro de conexão com o servidor.');
     }
   };
 
@@ -124,11 +152,68 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
 
         <div className="max-w-md w-full mx-auto">
           <div className="mb-10 text-center md:text-left">
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Bem-vindo de volta</h2>
-            <p className="text-slate-500">Insira suas credenciais para acessar o painel de telegestão.</p>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
+              {isForgotPasswordView ? 'Recuperar Senha' : 'Bem-vindo de volta'}
+            </h2>
+            <p className="text-slate-500">
+              {isForgotPasswordView 
+                ? 'Insira seu e-mail corporativo para receber uma senha provisória.' 
+                : 'Insira suas credenciais para acessar o painel de telegestão.'}
+            </p>
           </div>
 
-          {/* Formulário de Login Padrão */}
+          {/* Formulário de Esqueci a Senha */}
+          {isForgotPasswordView ? (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
+                  {error}
+                </div>
+              )}
+              {forgotPasswordMessage && (
+                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium">
+                  {forgotPasswordMessage}
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="text-sm font-bold text-slate-700">E-mail Corporativo</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-11 pr-3 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                    placeholder="ex: carlos.silva@skylight.gov.br"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Enviar Senha Provisória
+                </button>
+              </div>
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPasswordView(false);
+                    setError('');
+                    setForgotPasswordMessage('');
+                  }}
+                  className="text-sm font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Voltar para o Login
+                </button>
+              </div>
+            </form>
+          ) : (
           <form onSubmit={handleManualLogin} className="space-y-5">
             {error && (
               <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
@@ -156,7 +241,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-slate-700">Senha</label>
-                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">Esqueceu a senha?</a>
+                <button 
+                  type="button"
+                  onClick={() => setIsForgotPasswordView(true)}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                >
+                  Esqueceu a senha?
+                </button>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -201,6 +292,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
               Entrar na Plataforma
             </button>
           </form>
+          )}
           
           <div className="mt-8 text-center text-xs text-slate-500">
             <p>Uso exclusivo para colaboradores autorizados e parceiros da prefeitura.</p>

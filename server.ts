@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -24,6 +25,67 @@ async function startServer() {
   // API Routes
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", service: "Sky Light Telegestão API", timestamp: new Date().toISOString() });
+  });
+
+  const DB_FILE = path.join(process.cwd(), 'database.json');
+
+  // Database API
+  app.get("/api/db", async (req, res) => {
+    try {
+      const data = await fs.readFile(DB_FILE, 'utf-8');
+      res.json(JSON.parse(data));
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        res.json(null); // Backend has no DB yet
+      } else {
+        res.status(500).json({ error: "Failed to read database" });
+      }
+    }
+  });
+
+  app.post("/api/db", async (req, res) => {
+    try {
+      await fs.writeFile(DB_FILE, JSON.stringify(req.body, null, 2), 'utf-8');
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to write database:", error);
+      res.status(500).json({ error: "Failed to write database" });
+    }
+  });
+
+  // Auth API
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      let dataStr = null;
+      try {
+         dataStr = await fs.readFile(DB_FILE, 'utf-8');
+      } catch (err) {
+         return res.status(404).json({ error: "Banco de dados não encontrado" });
+      }
+      const db = JSON.parse(dataStr);
+      const userIndex = db.users.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (userIndex === -1) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      // Generate a temporary 6-character password
+      const tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      db.users[userIndex].password = tempPassword;
+      db.users[userIndex].requiresPasswordChange = true;
+
+      await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+      
+      res.json({ 
+        success: true, 
+        message: "Senha provisória gerada com sucesso e enviada ao e-mail.",
+        tempPassword // We return it so the frontend can show it in a fake alert for demonstration
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   });
 
   // AI Assistant endpoint for Smart Lighting Optimization

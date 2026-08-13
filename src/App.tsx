@@ -70,6 +70,7 @@ export default function App() {
   const [initialOpenAddUserModal, setInitialOpenAddUserModal] = useState<boolean>(false);
 
   // Application Master Data State
+  const [dataLoaded, setDataLoaded] = useState<boolean>(false);
   const [users, setUsers] = useState<UserAccount[]>(INITIAL_USERS);
   const [currentUser, setCurrentUser] = useState<UserAccount>(INITIAL_USERS[0]);
   const [poles, setPoles] = useState<Pole[]>(INITIAL_POLES);
@@ -80,6 +81,51 @@ export default function App() {
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [alerts, setAlerts] = useState<SystemAlert[]>(INITIAL_ALERTS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+
+  // Load from DB on mount
+  useEffect(() => {
+    fetch('/api/db')
+      .then(r => r.json())
+      .then(data => {
+        if (data) {
+          setUsers(data.users || INITIAL_USERS);
+          setPoles(data.poles || INITIAL_POLES);
+          setGateways(data.gateways || INITIAL_GATEWAYS);
+          setNodes(data.nodes || INITIAL_NODES);
+          setAutomationRules(data.automationRules || INITIAL_AUTOMATIONS);
+          setServiceOrders(data.serviceOrders || INITIAL_SERVICE_ORDERS);
+          setInventory(data.inventory || INITIAL_INVENTORY);
+          setAlerts(data.alerts || INITIAL_ALERTS);
+          setAuditLogs(data.auditLogs || INITIAL_AUDIT_LOGS);
+        }
+        setDataLoaded(true);
+      })
+      .catch(e => {
+        console.error("Failed to load DB", e);
+        setDataLoaded(true);
+      });
+  }, []);
+
+  // Save to DB on state change
+  useEffect(() => {
+    if (!dataLoaded) return;
+    const saveState = async () => {
+      try {
+        await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            users, poles, gateways, nodes, automationRules, serviceOrders, inventory, alerts, auditLogs
+          })
+        });
+      } catch (e) {
+        console.error("Failed to save state", e);
+      }
+    };
+    // Debounce or directly save
+    const timeout = setTimeout(saveState, 500);
+    return () => clearTimeout(timeout);
+  }, [users, poles, gateways, nodes, automationRules, serviceOrders, inventory, alerts, auditLogs, dataLoaded]);
 
   // User Management Handlers
   const handleAddUser = (newUser: UserAccount) => {
@@ -119,6 +165,8 @@ export default function App() {
 
     if (rememberMe) {
       localStorage.setItem('skylight_session', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('skylight_session');
     }
 
     // Add Audit Log
@@ -139,6 +187,35 @@ export default function App() {
     localStorage.removeItem('skylight_session');
     // Optionally reset active tab or just leave it
     setActiveTab('dashboard');
+  };
+
+  const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
+  const [passwordChangeError, setPasswordChangeError] = useState('');
+
+  const handleForcePasswordChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPasswordValue.length < 6) {
+      setPasswordChangeError('A nova senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (newPasswordValue !== confirmPasswordValue) {
+      setPasswordChangeError('As senhas não coincidem.');
+      return;
+    }
+    
+    // Update user
+    const updatedUser = { ...currentUser, password: newPasswordValue, requiresPasswordChange: false };
+    handleUpdateUser(updatedUser);
+    
+    // Update local storage session if it exists
+    if (localStorage.getItem('skylight_session')) {
+      localStorage.setItem('skylight_session', JSON.stringify(updatedUser));
+    }
+    
+    setNewPasswordValue('');
+    setConfirmPasswordValue('');
+    setPasswordChangeError('');
   };
 
   // Focus pole on map
@@ -592,6 +669,58 @@ export default function App() {
           SKY LIGHT v2.8.0-PRO • PLATAFORMA INTEGRADA DE TELEGESTÃO URBANA
         </div>
       </footer>
+
+      {isAuthenticated && currentUser?.requiresPasswordChange && (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <div className="mb-6 text-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Alteração Obrigatória</h2>
+              <p className="text-slate-500 text-sm">Por segurança, você deve alterar sua senha provisória antes de acessar o sistema.</p>
+            </div>
+            
+            <form onSubmit={handleForcePasswordChange} className="space-y-4">
+              {passwordChangeError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-medium">
+                  {passwordChangeError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Nova Senha</label>
+                <input 
+                  type="password" 
+                  value={newPasswordValue}
+                  onChange={(e) => setNewPasswordValue(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" 
+                  placeholder="Mínimo 6 caracteres"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Confirmar Senha</label>
+                <input 
+                  type="password" 
+                  value={confirmPasswordValue}
+                  onChange={(e) => setConfirmPasswordValue(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" 
+                  placeholder="Digite a senha novamente"
+                  required
+                />
+              </div>
+
+              <div className="pt-2">
+                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3.5 px-4 text-sm font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98]">
+                  Atualizar Senha e Entrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Global Emergency Control Modal */}
       {isEmergencyModalOpen && (

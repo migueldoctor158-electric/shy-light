@@ -11,6 +11,8 @@ export interface UserAccount {
   region: string;
   createdAt: string;
   lastAccess?: string;
+  password?: string;
+  requiresPasswordChange?: boolean;
 }
 
 export type PoleStatus =

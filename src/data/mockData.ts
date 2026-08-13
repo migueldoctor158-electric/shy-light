@@ -772,7 +772,9 @@ export const INITIAL_USERS: UserAccount[] = [
     phone: '(11) 98765-4321',
     region: 'Todas (Gestão Global)',
     createdAt: '2025-01-15',
-    lastAccess: 'Hoje às 16:20'
+    lastAccess: 'Hoje às 16:20',
+    password: 'senha',
+    requiresPasswordChange: false
   },
   {
     id: 'USR-002',
@@ -784,7 +786,9 @@ export const INITIAL_USERS: UserAccount[] = [
     phone: '(11) 97654-3210',
     region: 'Região Central & Jardins',
     createdAt: '2025-02-01',
-    lastAccess: 'Hoje às 15:45'
+    lastAccess: 'Hoje às 15:45',
+    password: 'senha',
+    requiresPasswordChange: false
   },
   {
     id: 'USR-003',
@@ -796,7 +800,9 @@ export const INITIAL_USERS: UserAccount[] = [
     phone: '(11) 96543-2109',
     region: 'Setor Norte - Jardins/Paulista',
     createdAt: '2025-03-10',
-    lastAccess: 'Hoje às 14:10'
+    lastAccess: 'Hoje às 14:10',
+    password: 'senha',
+    requiresPasswordChange: false
   },
   {
     id: 'USR-004',
@@ -808,7 +814,9 @@ export const INITIAL_USERS: UserAccount[] = [
     phone: '(11) 95432-1098',
     region: 'Setor Sul - Faria Lima',
     createdAt: '2025-04-05',
-    lastAccess: 'Ontem às 18:30'
+    lastAccess: 'Ontem às 18:30',
+    password: 'senha',
+    requiresPasswordChange: false
   }
 ];
 
