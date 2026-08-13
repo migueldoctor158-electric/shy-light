@@ -218,66 +218,9 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
               {roleDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-50 text-xs">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                    Alternar Conta / Perfil Ativo
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100 mb-1">
+                    Ações da Conta
                   </div>
-
-                  {/* Registered Users List */}
-                  {users.length > 0 && (
-                    <div className="py-1">
-                      <div className="px-3 py-1 text-[9px] font-bold text-slate-400 uppercase">
-                        Usuários Cadastrados
-                      </div>
-                      {users.map((u) => {
-                        const isSelected = currentUser?.id === u.id || currentRole === u.role;
-                        return (
-                          <button
-                            key={u.id}
-                            onClick={() => {
-                              if (onSelectUser) onSelectUser(u);
-                              if (onRoleChange) onRoleChange(u.role);
-                              setRoleDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition ${
-                              isSelected ? 'bg-blue-50/80 font-bold text-blue-900' : 'text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2">
-                              {u.role === 'Técnico' ? (
-                                <HardHat className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                              ) : (
-                                <Shield className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                              )}
-                              <div>
-                                <p className="font-bold text-slate-900">{u.name}</p>
-                                <p className="text-[10px] text-slate-500">{u.role} • {u.region}</p>
-                              </div>
-                            </div>
-                            {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div className="border-t border-slate-100 pt-1.5 mt-1 px-3 py-1 text-[10px] uppercase font-bold text-slate-400">
-                    Troca Direta de Cargo (Teste)
-                  </div>
-                  {roles.map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        if (onRoleChange) onRoleChange(r);
-                        setRoleDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between hover:bg-slate-50 transition ${
-                        currentRole === r ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-600'
-                      }`}
-                    >
-                      <span>Perfil: {r}</span>
-                      {currentRole === r && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                    </button>
-                  ))}
 
                   {!isTechnician && onOpenUserRegistration && (
                     <div className="border-t border-slate-100 pt-2 mt-1 px-2">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lightbulb, Lock, Mail, Eye, EyeOff, ShieldCheck, Activity, Cpu, Radio, Shield, HardHat } from 'lucide-react';
+import { Lightbulb, Lock, Mail, Eye, EyeOff, ShieldCheck, Activity, Cpu, Radio } from 'lucide-react';
 import { UserAccount } from '../types';
 
 interface LoginScreenProps {
@@ -28,10 +28,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
       setError('Credenciais inválidas. Verifique seu e-mail ou matrícula.');
     }
   };
-
-  const adminUser = mockUsers.find(u => u.role === 'Administrador');
-  const supervisorUser = mockUsers.find(u => u.role === 'Supervisor');
-  const techUser = mockUsers.find(u => u.role === 'Técnico');
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row font-sans selection:bg-blue-500/30">
@@ -130,51 +126,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, mockUsers }) 
           <div className="mb-10 text-center md:text-left">
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Bem-vindo de volta</h2>
             <p className="text-slate-500">Insira suas credenciais para acessar o painel de telegestão.</p>
-          </div>
-
-          {/* Área de "Acesso Rápido / Demonstração" */}
-          <div className="mb-8">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center md:text-left">
-              Acesso Rápido de Demonstração
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {adminUser && (
-                <button
-                  onClick={() => onLogin(adminUser, false)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 transition-colors group"
-                >
-                  <Shield className="w-5 h-5 text-blue-600 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold text-slate-700">Administrador</span>
-                </button>
-              )}
-              {supervisorUser && (
-                <button
-                  onClick={() => onLogin(supervisorUser, false)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors group"
-                >
-                  <ShieldCheck className="w-5 h-5 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold text-slate-700">Supervisor</span>
-                </button>
-              )}
-              {techUser && (
-                <button
-                  onClick={() => onLogin(techUser, false)}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-200 transition-colors group"
-                >
-                  <HardHat className="w-5 h-5 text-amber-600 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold text-slate-700">Técnico</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-slate-400 text-xs font-medium uppercase">ou faça login com e-mail</span>
-            </div>
           </div>
 
           {/* Formulário de Login Padrão */}
