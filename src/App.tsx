@@ -13,9 +13,14 @@ import { BatchControl } from './components/BatchControl';
 import { AutomationEngine } from './components/AutomationEngine';
 import { MaintenanceManager } from './components/MaintenanceManager';
 import { AlertsManager } from './components/AlertsManager';
-import { ReportsManager } from './components/ReportsManager';
+import { SettingsPanel } from './components/SettingsPanel';
 import { SecurityAudit } from './components/SecurityAudit';
+import { ReportsGenerator } from './components/ReportsGenerator';
 import { EmergencyModal } from './components/EmergencyModal';
+
+// Firebase
+import { db } from './lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import {
   INITIAL_POLES,
@@ -86,13 +91,13 @@ export default function App() {
 
   // Load from DB on mount
   useEffect(() => {
-    fetch('/api/db')
-      .then(r => {
-        if (!r.ok) throw new Error("Falha ao ler o banco de dados");
-        return r.json();
-      })
-      .then(data => {
-        if (data) {
+    const loadData = async () => {
+      try {
+        const docRef = doc(db, 'system', 'data');
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
           setUsers(data.users || INITIAL_USERS);
           setPoles(data.poles || INITIAL_POLES);
           setGateways(data.gateways || INITIAL_GATEWAYS);
@@ -102,14 +107,17 @@ export default function App() {
           setInventory(data.inventory || INITIAL_INVENTORY);
           setAlerts(data.alerts || INITIAL_ALERTS);
           setAuditLogs(data.auditLogs || INITIAL_AUDIT_LOGS);
+        } else {
+          // Document doesn't exist yet, it's the first run on this Firebase project.
+          // We will let it save the initial state.
         }
         setDataLoaded(true);
-      })
-      .catch(e => {
-        console.error("Failed to load DB", e);
-        // Do NOT set dataLoaded to true, so we don't accidentally save mock data on top of DB!
+      } catch (e) {
+        console.error("Failed to load from Firebase", e);
         setDataLoadError(true);
-      });
+      }
+    };
+    loadData();
   }, []);
 
   const initialRender = React.useRef(true);
@@ -123,15 +131,11 @@ export default function App() {
     }
     const saveState = async () => {
       try {
-        await fetch('/api/db', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            users, poles, gateways, nodes, automationRules, serviceOrders, inventory, alerts, auditLogs
-          })
+        await setDoc(doc(db, 'system', 'data'), {
+          users, poles, gateways, nodes, automationRules, serviceOrders, inventory, alerts, auditLogs
         });
       } catch (e) {
-        console.error("Failed to save state", e);
+        console.error("Failed to save state to Firebase", e);
       }
     };
     // Debounce or directly save

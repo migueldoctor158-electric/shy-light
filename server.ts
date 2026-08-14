@@ -5,6 +5,8 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 dotenv.config();
 
@@ -54,18 +56,37 @@ async function startServer() {
     }
   });
 
-  // Auth API
+  // Auth API  // Auth API
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
       const { email } = req.body;
-      let dataStr = null;
-      try {
-         dataStr = await fs.readFile(DB_FILE, 'utf-8');
-      } catch (err) {
-         return res.status(404).json({ error: "Banco de dados não encontrado" });
+      if (!email) {
+        return res.status(400).json({ error: "E-mail não fornecido" });
       }
-      const db = JSON.parse(dataStr);
-      const userIndex = db.users.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
+
+      // Initialize Firebase App for the server environment
+      const firebaseConfig = {
+        apiKey: process.env.VITE_FIREBASE_API_KEY,
+        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.VITE_FIREBASE_APP_ID
+      };
+
+      const firebaseApp = initializeApp(firebaseConfig);
+      const db = getFirestore(firebaseApp);
+
+      const docRef = doc(db, 'system', 'data');
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return res.status(404).json({ error: "Banco de dados não encontrado" });
+      }
+
+      const data = docSnap.data();
+      const users = data.users || [];
+      const userIndex = users.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
       
       if (userIndex === -1) {
         return res.status(404).json({ error: "Usuário não encontrado" });
@@ -74,10 +95,10 @@ async function startServer() {
       // Generate a temporary 6-character password
       const tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
       
-      db.users[userIndex].password = tempPassword;
-      db.users[userIndex].requiresPasswordChange = true;
+      users[userIndex].password = tempPassword;
+      users[userIndex].requiresPasswordChange = true;
 
-      await fs.writeFile(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+      await updateDoc(docRef, { users });
       
       let emailSent = false;
       if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -126,9 +147,10 @@ async function startServer() {
         message: emailSent 
           ? "Senha provisória gerada e enviada para o seu e-mail!" 
           : "Senha provisória gerada com sucesso! (Configure as credenciais SMTP no .env para receber por e-mail real).",
-        tempPassword // We still return it so the frontend fake UI works if SMTP is not configured
+        tempPassword
       });
     } catch (error) {
+      console.error("Internal Server Error", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
